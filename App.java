@@ -1,45 +1,5 @@
 package CSSR;
 
-<<<<<<< HEAD
-import java.util.*;
-import twitter4j.*;
-import twitter4j.Status;
-import twitter4j.Twitter;
-import twitter4j.TwitterException;
-import twitter4j.TwitterFactory;
-
-
-public class App
-{
-    public static void main( String[] args )
-    {
-        Twitter twitter = TwitterFactory.getSingleton();
-
-        try
-        {
-            List<User> following  = twitter.getFollowersList();
-            List<Status> statuses = twitter.getHomeTimeline();
-            for (Status status : statuses) {
-               // if(status.getUser().getScreenName().equals("MaxKriegerVG"))
-                {
-
-                    //twitter.createFavorite(status.getId());
-                }
-                System.out.println("@" + status.getUser().getScreenName() + " - " + status.getText());
-                if(status.getUser().getScreenName().equals("MaxKriegerVG"))
-                {
-                    twitter.createFavorite(status.getId());
-                    System.out.println(twitter.getRateLimitStatus());
-                }
-            }
-        }
-        catch (TwitterException ex)
-        {
-            System.out.println(ex.getErrorMessage());
-        }
-    }
-}
-=======
 import java.util.logging.*;
 import java.util.logging.Logger;
 import java.io.IOException;
@@ -69,7 +29,7 @@ public class App
             getNextUser(targetAccount);
             Thread.sleep(60000);
 
-        } while (errors > ERROR_TOLERANCE && accountsFollowed > GOAL);
+        } while (errors < ERROR_TOLERANCE && accountsFollowed < GOAL);
         collectData();
     }
     public static void collectData ()
@@ -91,10 +51,10 @@ public class App
 
             for( int i = 0; i < followerIDArray.length; ++i)
             {
-               if (followerIDArray[i] != 0)
+                if (followerIDArray[i] != 0)
                     ++followerCount;
 
-                for( int x = 0; i < friendIDArray.length; ++x)
+                for( int x = 0; x < friendIDArray.length; ++x)
                 {
                     if (i == x)
                     {
@@ -200,5 +160,3 @@ public class App
         }
     }
 }
-
->>>>>>> 51cceca7b917ceb713f1c03913279aa8587d88c5
