@@ -59,10 +59,10 @@ public class App
 
                 for( int x = 0; x < friendIDArray.length; ++x)
                 {
-                    if (i == x)
+                    if (i == x && x + i != 0)
                     {
                         ++success;
-                        LOGGER.info(twitter.showUser(followerIDArray[i]) + " followed you!");
+                        LOGGER.info(twitter.showUser(followerIDArray[i]).getScreenName() + " followed you!");
                     }
                 }
             }
