@@ -13,16 +13,17 @@ public class App
     static String pitch = "Hello! I am a research tool!  Please follow me?  Read all about me at www.clevelandsocialresearch.wordpress.com";
     static int accountsFollowed = 0;
     static int errors = 0;
+    final static String MY_ACCOUNT = "@AbbotMcFly";
 
     final static java.util.logging.Logger LOGGER = Logger.getLogger("CSSR.App");
 
     static String targetAccount = "@MaxKriegerVG";
 
 
-    public static void main( String[] args ) throws InterruptedException
-    {
-        configLogging();
-        postTweet("One small step for man.  1,000 small steps for bot.");
+    public static void main( String[] args ) throws InterruptedException {
+
+       configLogging();
+       postTweet("One small step for man.  1,000 small steps for bot.");
         do
         {
             followUser(targetAccount);
@@ -30,9 +31,10 @@ public class App
             Thread.sleep(60000);
 
         } while (errors < ERROR_TOLERANCE && accountsFollowed < GOAL);
-        collectData();
+
+       collectData();
     }
-    public static void collectData ()
+    public static void collectData()
     {
         try
         {
@@ -41,11 +43,11 @@ public class App
             int followerCount = 0;
             long cursor = -1;
 
-            IDs followerIDs  = twitter.getFollowersIDs(targetAccount, cursor, 1000);
+            IDs followerIDs  = twitter.getFollowersIDs(MY_ACCOUNT, cursor, 1000);
             long [] followerIDArray = new long[1000];
             followerIDArray = followerIDs.getIDs();
 
-            IDs friendIDs  = twitter.getFriendsIDs(targetAccount, cursor, 1000);
+            IDs friendIDs  = twitter.getFriendsIDs(MY_ACCOUNT, cursor, 1000);
             long [] friendIDArray = new long[1000];
             friendIDArray = friendIDs.getIDs();
 
@@ -53,13 +55,14 @@ public class App
             {
                 if (followerIDArray[i] != 0)
                     ++followerCount;
+                    LOGGER.info(followerCount + " followers.");
 
                 for( int x = 0; x < friendIDArray.length; ++x)
                 {
                     if (i == x)
                     {
                         ++success;
-                        LOGGER.info(twitter.showUser(followerIDArray[i]).getScreenName() + " followed you!");
+                        LOGGER.info(twitter.showUser(followerIDArray[i]) + " followed you!");
                     }
                 }
             }
@@ -86,7 +89,7 @@ public class App
     }
     public static void followUser (String targetAccount)
     {
-        //follows a user if they do not have a pending follow request.  asks for another user if they do.
+        //follows a user if they do not have a pending follow request.  Asks for another user if they do.
         try
         {
             Twitter twitter = TwitterFactory.getSingleton();
