@@ -13,32 +13,33 @@ public class App
     static String pitch = "Hello! I am a research tool!  Please follow me?  Read all about me at www.clevelandsocialresearch.wordpress.com";
     static int accountsFollowed = 0;
     static int errors = 0;
+    static int blockingDM = 0;
+    static int askedNicely = 0;
     final static String MY_ACCOUNT = "@AbbotMcFly";
 
     final static java.util.logging.Logger LOGGER = Logger.getLogger("CSSR.App");
 
-    static String targetAccount = "@MaxKriegerVG";
-
+    static String targetAccount = "@OmegaNix";
 
     public static void main( String[] args ) throws InterruptedException {
 
-       configLogging();
-       postTweet("One small step for man.  1,000 small steps for bot.");
+        Twitter twitter = TwitterFactory.getSingleton();
+        configLogging();
+        postTweet(twitter, "Abbot the robot reindeer! www.clevelandsocialresearch.wordpress.com");
         do
         {
-            followUser(targetAccount);
-            getNextUser(targetAccount);
+            getNextUser(twitter);
+            followUser(twitter, targetAccount);
             Thread.sleep(60000);
 
         } while (errors < ERROR_TOLERANCE && accountsFollowed < GOAL);
 
-       collectData();
+       collectData(twitter);
     }
-    public static void collectData()
+    public static void collectData(Twitter twitter)
     {
         try
         {
-            Twitter twitter = TwitterFactory.getSingleton();
             int success = 0;
             int followerCount = 0;
             long cursor = -1;
@@ -67,7 +68,11 @@ public class App
                 }
             }
             LOGGER.info("Total followers gained from asking: " + success);
-            LOGGER.info("Unasked followers gained: " + (followerCount - success) );
+            LOGGER.info("Total follower count: " + followerCount);
+            LOGGER.info("Accounts followed: " + accountsFollowed);
+            LOGGER.info("DMs sent: " + askedNicely);
+            LOGGER.info("DMs blocked: " + blockingDM);
+            LOGGER.info("Errors: " + errors);
         }
         catch (TwitterException ex) {
             LOGGER.warning(ex.getErrorMessage());
@@ -77,7 +82,7 @@ public class App
     {  //set up logging to external file for review afterwards
         try
         {
-            Handler fileHandler = new FileHandler("./Experiment1.log");
+            Handler fileHandler = new FileHandler("./Experiment1_1_0.log");
             LOGGER.addHandler(fileHandler);
             fileHandler.setLevel(Level.ALL);
             LOGGER.config("Logger Configured!");
@@ -87,22 +92,21 @@ public class App
             errors = ERROR_TOLERANCE;  // prevents program from ever running without a log
         }
     }
-    public static void followUser (String targetAccount)
+    public static void followUser (Twitter twitter, String targetAccount)
     {
-        //follows a user if they do not have a pending follow request.  Asks for another user if they do.
+        //follows a user if they are not a friend or have a pending friend request
         try
         {
-            Twitter twitter = TwitterFactory.getSingleton();
+
             if(twitter.showUser(targetAccount).isFollowRequestSent())
             {
                 LOGGER.info(targetAccount + " was already sent a follow request.  Fetching new user.");
-                followUser(getNextUser(targetAccount));
             }
             else
             {
                 twitter.createFriendship(targetAccount);
                 ++accountsFollowed;
-                sendMessage(targetAccount);
+                sendMessage(twitter, targetAccount);
                 LOGGER.info(targetAccount + " followed! " + accountsFollowed + " total accounts followed!");
             }
         } catch (TwitterException ex) {
@@ -110,37 +114,40 @@ public class App
             ++errors;
         }
     }
-    public static String getNextUser (String targetAccount)
+    public static void getNextUser (Twitter twitter)
     {// takes a Twitter handle as a parameter, returns a follower handle selected at random from the first page of 5000.
-        try
+        try {
+            try {
+                final int PAGE_MAX = 5000;
+
+                long cursor = -1;
+                int followerCount = twitter.showUser(targetAccount).getFollowersCount();
+                IDs ids = twitter.getFollowersIDs(targetAccount, cursor, PAGE_MAX);
+                long[] idArray = new long[5000];
+                idArray = ids.getIDs();
+                Random rn = new Random();
+                int randomID;
+                if (followerCount < PAGE_MAX)
+                    randomID = rn.nextInt(followerCount);
+                else
+                    randomID = rn.nextInt(PAGE_MAX);
+                long nextUserID = idArray[randomID];
+                LOGGER.info("Next user is " + nextUserID);
+                targetAccount = twitter.showUser(nextUserID).getScreenName();
+
+            } catch (TwitterException ex) {
+
+                LOGGER.warning(ex.getErrorMessage());
+                ++errors;
+            }
+        } catch (NullPointerException npex)
         {
-            final int PAGE_MAX = 5000;
-            Twitter twitter = TwitterFactory.getSingleton();
-            long cursor = -1;
-            int followerCount = twitter.showUser(targetAccount).getFollowersCount();
-            IDs ids  = twitter.getFollowersIDs(targetAccount, cursor, PAGE_MAX);
-            long [] idArray = new long[5000];
-            idArray = ids.getIDs();
-            Random rn = new Random();
-            int randomID;
-            if (followerCount < PAGE_MAX)
-                randomID = rn.nextInt(followerCount);
-            else
-                randomID = rn.nextInt(PAGE_MAX);
-            long nextUserID = idArray[randomID];
-            LOGGER.info("Next user is " + nextUserID);
-            return twitter.showUser(nextUserID).getScreenName();
-
-        } catch (TwitterException ex) {
-
-            LOGGER.warning(ex.getErrorMessage());
             ++errors;
-            return (ex.getErrorMessage());
+            LOGGER.warning("403 Unauthorized - null result returned");
         }
     }
-    public static void postTweet(String msg)
+    public static void postTweet(Twitter twitter, String msg)
     { //nothing special.  Update status and log it.
-        Twitter twitter = TwitterFactory.getSingleton();
         try {
             Status status = twitter.updateStatus(msg);
             LOGGER.info("Tweeted " + status.getText());
@@ -150,16 +157,16 @@ public class App
             ++errors;
         }
     }
-    public static void sendMessage (String targetAccount)
+    public static void sendMessage (Twitter twitter, String targetAccount)
     { // sends the pitch to target user, increments accountsMessaged
         try
         {
-            Twitter twitter = TwitterFactory.getSingleton();
             twitter.sendDirectMessage(targetAccount, pitch);
+            ++askedNicely;
             LOGGER.info("Asked " + targetAccount + " nicely.");
         } catch (TwitterException ex) {
-            LOGGER.warning(ex.getErrorMessage());
-            ++errors;
+            LOGGER.info(ex.getErrorMessage());
+            ++blockingDM;
         }
     }
 }
