@@ -21,14 +21,23 @@ public class App
 
     static String targetAccount = "@OmegaNix";
 
-    public static void main( String[] args ) throws InterruptedException {
+    public static void main( String[] args ) throws InterruptedException
+    {
 
         Twitter twitter = TwitterFactory.getSingleton();
         configLogging();
-        postTweet(twitter, "Abbot the robot reindeer! www.clevelandsocialresearch.wordpress.com");
+        postTweet(twitter, "Christmas Run! www.clevelandsocialresearch.wordpress.com");
         do
         {
-            getNextUser(twitter);
+            try
+            {
+                getNextUser(twitter);
+            }
+            catch(NullPointerException npex)
+            {
+                ++errors;
+                twitter = TwitterFactory.getSingleton();
+            }
             followUser(twitter, targetAccount);
             Thread.sleep(60000);
 
@@ -82,7 +91,7 @@ public class App
     {  //set up logging to external file for review afterwards
         try
         {
-            Handler fileHandler = new FileHandler("./Experiment1_1_0.log");
+            Handler fileHandler = new FileHandler("./Experiment1_1_1.log");
             LOGGER.addHandler(fileHandler);
             fileHandler.setLevel(Level.ALL);
             LOGGER.config("Logger Configured!");
@@ -106,7 +115,6 @@ public class App
             {
                 twitter.createFriendship(targetAccount);
                 ++accountsFollowed;
-                sendMessage(twitter, targetAccount);
                 LOGGER.info(targetAccount + " followed! " + accountsFollowed + " total accounts followed!");
             }
         } catch (TwitterException ex) {
@@ -114,10 +122,9 @@ public class App
             ++errors;
         }
     }
-    public static void getNextUser (Twitter twitter)
+    public static void getNextUser (Twitter twitter) throws NullPointerException
     {// takes a Twitter handle as a parameter, returns a follower handle selected at random from the first page of 5000.
-        try {
-            try {
+          try {
                 final int PAGE_MAX = 5000;
 
                 long cursor = -1;
@@ -140,11 +147,7 @@ public class App
                 LOGGER.warning(ex.getErrorMessage());
                 ++errors;
             }
-        } catch (NullPointerException npex)
-        {
-            ++errors;
-            LOGGER.warning("403 Unauthorized - null result returned");
-        }
+
     }
     public static void postTweet(Twitter twitter, String msg)
     { //nothing special.  Update status and log it.
